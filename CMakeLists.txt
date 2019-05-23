@@ -10,4 +10,6 @@ project(DirectX_12_Lesson
         DESCRIPTION "Lessons in using Direct X 12 application"
 )
 
+add_definitions(-DUNICODE)
+
 add_subdirectory(src)

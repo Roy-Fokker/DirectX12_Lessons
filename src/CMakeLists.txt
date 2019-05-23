@@ -1,6 +1,5 @@
 find_package(fmt)
 
-
 add_executable(lesson1
     lesson1.cpp
 )
