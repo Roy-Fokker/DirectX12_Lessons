@@ -88,7 +88,7 @@ namespace Window
             UnregisterClass(CLASSNAME.data(), hInstance);
         }
 
-        void Create(RECT windowRect, const std::wstring &title)
+        void Create(RECT windowRect, const std::wstring_view &title)
         {
             auto[x, y, w, h] = windowRect;
             w = w - x;
