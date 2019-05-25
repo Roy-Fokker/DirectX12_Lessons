@@ -5,6 +5,23 @@
 #include <string>
 #include <Windows.h>
 
+#include <cstdint>
+#include <cassert>
+#include <algorithm>
+#include <array>
+
+#include <winrt/base.h>
+
+#include <d3d12.h>
+#include <dxgi1_6.h>
+
+namespace Helpers
+{
+    inline void AssertIfFailed(HRESULT hr)
+    {
+        assert(FAILED(hr));
+    }
+}
 
 namespace Window
 {
