@@ -33,7 +33,7 @@ namespace Window
 
         Window() = delete;
 
-        Window(int width, int height, const std::wstring &title)
+        Window(int width, int height, const std::wstring_view &title)
         {
             Register();
             
@@ -171,7 +171,16 @@ namespace Lesson1
 
 int main()
 {
-    fmt::print("Hello World");
+    fmt::print("Direct X 12 - Lesson 1\n");
+
+    constexpr std::wstring_view wnd_title { L"Test Window" };
+    constexpr int wnd_width { 1280 },
+                  wnd_height { wnd_width * 10 / 16 };
+
+    fmt::print(L"Window: \n\t Title: {} \n\t Width: {} \n\t Height: {} \n",
+                wnd_title, wnd_width, wnd_height);
+
+    Window::Window wnd(wnd_width, wnd_height, wnd_title);
 
     Window::Window wnd(600, 400, L"Test Window");
 
