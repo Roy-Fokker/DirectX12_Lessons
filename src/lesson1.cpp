@@ -166,7 +166,126 @@ namespace Window
 
 namespace Lesson1
 {
+    using namespace Helpers;
 
+    static constexpr uint8_t Num_Frames = 3;
+
+    struct DirectX12
+    {
+        using Device_t = winrt::com_ptr<ID3D12Device2>;
+        using CommandQueue_t = winrt::com_ptr<ID3D12CommandQueue>;
+        using SwapChain_t = winrt::com_ptr<IDXGISwapChain4>;
+        using Buffer_t = winrt::com_ptr<ID3D12Resource>;
+        using CommandList_t = winrt::com_ptr<ID3D12CommandList>;
+        using CommandAllocator_t = winrt::com_ptr<ID3D12CommandAllocator>;
+        using DescriptorHeap_t = winrt::com_ptr<ID3D12DescriptorHeap>;
+        using Fence_t = winrt::com_ptr<ID3D12Fence>;
+
+        DirectX12() = delete;
+        DirectX12(HWND hWnd) :
+            m_hWnd(hWnd)
+        {
+            /* Enable Debug Layer */ {
+            #ifdef _DEBUG
+                winrt::com_ptr<ID3D12Debug> debugInterface;
+                auto dihr = D3D12GetDebugInterface(__uuidof(ID3D12Debug), debugInterface.put_void());
+                AssertIfFailed(dihr);
+
+                debugInterface->EnableDebugLayer();
+            #endif
+            }
+
+            winrt::com_ptr<IDXGIFactory4> dxgiFactory;
+            /* Create DXGI Factory */ {
+                uint32_t factoryFlags{};
+            #ifdef _DEBUG
+                factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+            #endif
+                auto dfhr = CreateDXGIFactory2(factoryFlags, 
+                                            __uuidof(IDXGIFactory4),
+                                            dxgiFactory.put_void());
+                AssertIfFailed(dfhr);
+            }
+
+            winrt::com_ptr<IDXGIAdapter4> dxgiAdapter4;
+            size_t maxDedicatedVideoMemory{};
+            /* Get the adapter with Largest Video Memory */ {
+                winrt::com_ptr<IDXGIAdapter1> dxgiAdapter1;
+                for (uint32_t i = 0; 
+                    dxgiFactory->EnumAdapters1(i, dxgiAdapter1.put()) not_eq DXGI_ERROR_NOT_FOUND;
+                    ++i)
+                {
+                    DXGI_ADAPTER_DESC1 dxgiAdapterDesc1{};
+                    dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
+
+                    if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0
+                        && dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory
+                        && D3D12CreateDevice(dxgiAdapter1.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr) == S_OK)
+                    {
+                        maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
+                        dxgiAdapter4 = dxgiAdapter1.as();
+                    }
+                }
+            }
+
+            /* Create Direct 3D 12 device */ {
+                auto dhr = D3D12CreateDevice(dxgiAdapter4.get(), 
+                                             D3D_FEATURE_LEVEL_11_0, 
+                                             __uuidof(ID3D12Device2),
+                                             m_Device.put_void());
+                AssertIfFailed(dhr);
+
+            #ifdef _DEBUG
+                winrt::com_ptr<ID3D12InfoQueue> infoQueue = m_Device.as();
+                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,      TRUE);
+                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,    TRUE);
+
+                D3D12_MESSAGE_SEVERITY severities [] {
+                    D3D12_MESSAGE_SEVERITY_INFO
+                };
+
+                D3D12_MESSAGE_ID denyIds[] {
+                    D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+                    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+                    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+                };
+
+                D3D12_INFO_QUEUE_FILTER newFilter{};
+                newFilter.DenyList.NumSeverities = std::size(severities);
+                newFilter.DenyList.pSeverityList = severities;
+                newFilter.DenyList.NumIDs = std::size(denyIds);
+                newFilter.DenyList.pIDList = denyIds;
+                auto iqhr = infoQueue->PushStorageFilter(&newFilter);
+                AssertIfFailed(iqhr);
+            #endif
+            }
+
+            /* Create Command Queue */ {
+                D3D12_COMMAND_QUEUE_DESC desc{};
+                desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+                desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+                desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+                desc.NodeMask = 0;
+
+                auto cqhr = m_Device->CreateCommandQueue(&desc,
+                                                         __uuidof(ID3D12CommandQueue),
+                                                         m_CommandQueue.put_void());
+                AssertIfFailed(cqhr);
+            }
+        }
+        ~DirectX12() = default;
+
+        HWND m_hWnd{};
+        Device_t m_Device;
+        CommandQueue_t m_CommandQueue;
+        SwapChain_t m_SwapChain;
+        std::array<Buffer_t, Num_Frames> m_BackBuffers;
+        CommandList_t m_CommandList;
+        std::array<CommandAllocator_t, Num_Frames> m_CommandAllocators;
+        DescriptorHeap_t m_RTVDescriptorHeap;
+        Fence_t m_Fence;
+    };
 }
 
 int main()
@@ -182,7 +301,7 @@ int main()
 
     Window::Window wnd(wnd_width, wnd_height, wnd_title);
 
-    Window::Window wnd(600, 400, L"Test Window");
+    Lesson1::DirectX12 d3d(wnd.m_hWnd);
 
     wnd.Show();
 
