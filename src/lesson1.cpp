@@ -160,154 +160,153 @@ namespace Window
 
 namespace Lesson1
 {
-    static constexpr uint8_t Num_Frames = 3;
+	static constexpr uint8_t Num_Frames = 3;
 
-    struct DirectX12
-    {
-        using Device_t = winrt::com_ptr<ID3D12Device2>;
-        using CommandQueue_t = winrt::com_ptr<ID3D12CommandQueue>;
-        using SwapChain_t = winrt::com_ptr<IDXGISwapChain4>;
-        using Buffer_t = winrt::com_ptr<ID3D12Resource>;
-        using CommandList_t = winrt::com_ptr<ID3D12CommandList>;
-        using CommandAllocator_t = winrt::com_ptr<ID3D12CommandAllocator>;
-        using DescriptorHeap_t = winrt::com_ptr<ID3D12DescriptorHeap>;
-        using Fence_t = winrt::com_ptr<ID3D12Fence>;
+	struct DirectX12
+	{
+		using Device_t = winrt::com_ptr<ID3D12Device2>;
+		using CommandQueue_t = winrt::com_ptr<ID3D12CommandQueue>;
+		using SwapChain_t = winrt::com_ptr<IDXGISwapChain4>;
+		using Buffer_t = winrt::com_ptr<ID3D12Resource>;
+		using CommandList_t = winrt::com_ptr<ID3D12CommandList>;
+		using CommandAllocator_t = winrt::com_ptr<ID3D12CommandAllocator>;
+		using DescriptorHeap_t = winrt::com_ptr<ID3D12DescriptorHeap>;
+		using Fence_t = winrt::com_ptr<ID3D12Fence>;
 
-        DirectX12() = delete;
-        DirectX12(HWND hWnd) :
-            m_hWnd(hWnd)
-        {
-            /* Enable Debug Layer */ {
-            #ifdef _DEBUG
-                winrt::com_ptr<ID3D12Debug> debugInterface;
-                auto dihr = D3D12GetDebugInterface(__uuidof(ID3D12Debug), debugInterface.put_void());
-                AssertIfFailed(dihr);
+		DirectX12() = delete;
+		DirectX12(HWND hWnd) :
+			m_hWnd(hWnd)
+		{
+			/* Enable Debug Layer */ {
+			#ifdef _DEBUG
+				winrt::com_ptr<ID3D12Debug> debugInterface;
+				auto dihr = D3D12GetDebugInterface(__uuidof(ID3D12Debug), debugInterface.put_void());
+				AssertIfFailed(dihr);
+				
+				debugInterface->EnableDebugLayer();
+			#endif
+			}
 
-                debugInterface->EnableDebugLayer();
-            #endif
-            }
+			winrt::com_ptr<IDXGIFactory4> dxgiFactory;
+			/* Create DXGI Factory */ {
+				uint32_t factoryFlags{};
+			#ifdef _DEBUG
+				factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+			#endif
+				auto dfhr = CreateDXGIFactory2(factoryFlags, 
+				                            __uuidof(IDXGIFactory4),
+				                            dxgiFactory.put_void());
+				AssertIfFailed(dfhr);
+			}
 
-            winrt::com_ptr<IDXGIFactory4> dxgiFactory;
-            /* Create DXGI Factory */ {
-                uint32_t factoryFlags{};
-            #ifdef _DEBUG
-                factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-            #endif
-                auto dfhr = CreateDXGIFactory2(factoryFlags, 
-                                            __uuidof(IDXGIFactory4),
-                                            dxgiFactory.put_void());
-                AssertIfFailed(dfhr);
-            }
+			winrt::com_ptr<IDXGIAdapter4> dxgiAdapter4{};
+			size_t maxDedicatedVideoMemory{};
+			/* Get the adapter with Largest Video Memory */ {
+				winrt::com_ptr<IDXGIAdapter1> dxgiAdapter1{};
+				for (uint32_t i = 0; 
+				    dxgiFactory->EnumAdapters1(i, dxgiAdapter1.put()) not_eq DXGI_ERROR_NOT_FOUND;
+				    ++i)
+				{
+					DXGI_ADAPTER_DESC1 dxgiAdapterDesc1{};
+					dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
+					
+					IDXGIAdapter1 *da1 = dxgiAdapter1.get();
+					auto dchr = D3D12CreateDevice(da1, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr);
+					if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0
+					    && dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory
+					    && SUCCEEDED(dchr))
+					{
+						maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
+						auto dahr = dxgiAdapter1->QueryInterface<IDXGIAdapter4>(dxgiAdapter4.put());
+						AssertIfFailed(dahr);
+						//dxgiAdapter4 = dxgiAdapter1.as<IDXGIAdapter4>();
+					}
+					dxgiAdapter1.detach();
+				}
+			}
 
-            winrt::com_ptr<IDXGIAdapter4> dxgiAdapter4{};
-            size_t maxDedicatedVideoMemory{};
-            /* Get the adapter with Largest Video Memory */ {
-                winrt::com_ptr<IDXGIAdapter1> dxgiAdapter1{};
-                for (uint32_t i = 0; 
-                    dxgiFactory->EnumAdapters1(i, dxgiAdapter1.put()) not_eq DXGI_ERROR_NOT_FOUND;
-                    ++i)
-                {
-                    DXGI_ADAPTER_DESC1 dxgiAdapterDesc1{};
-                    dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
+			/* Create Direct 3D 12 device */ {
+				auto dhr = D3D12CreateDevice(dxgiAdapter4.get(), 
+				                             D3D_FEATURE_LEVEL_11_0, 
+				                             __uuidof(ID3D12Device2),
+				                             m_Device.put_void());
+				AssertIfFailed(dhr);
 
-                    IDXGIAdapter1 *da1 = dxgiAdapter1.get();
-                    auto dchr = D3D12CreateDevice(da1, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr);
-                    if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0
-                        && dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory
-                        && SUCCEEDED(dchr))
-                    {
-                        maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
-                        auto dahr = dxgiAdapter1->QueryInterface<IDXGIAdapter4>(dxgiAdapter4.put());
-                        AssertIfFailed(dahr);
-                        //dxgiAdapter4 = dxgiAdapter1.as<IDXGIAdapter4>();
-                    }
-                    dxgiAdapter1.detach();
-                }
-            }
+			#ifdef _DEBUG
+				winrt::com_ptr<ID3D12InfoQueue> infoQueue;
+				auto iqhr = m_Device->QueryInterface<ID3D12InfoQueue>(infoQueue.put());
+				AssertIfFailed(iqhr);
+				//winrt::com_ptr<ID3D12InfoQueue> infoQueue = m_Device.as<ID3D12InfoQueue>();
+				infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+				infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,      TRUE);
+				infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,    TRUE);
 
-            /* Create Direct 3D 12 device */ {
-                auto dhr = D3D12CreateDevice(dxgiAdapter4.get(), 
-                                             D3D_FEATURE_LEVEL_11_0, 
-                                             __uuidof(ID3D12Device2),
-                                             m_Device.put_void());
-                AssertIfFailed(dhr);
+				D3D12_MESSAGE_SEVERITY severities [] {
+				    D3D12_MESSAGE_SEVERITY_INFO
+				};
 
-            #ifdef _DEBUG
-                winrt::com_ptr<ID3D12InfoQueue> infoQueue;
-                auto iqhr = m_Device->QueryInterface<ID3D12InfoQueue>(infoQueue.put());
-                AssertIfFailed(iqhr);
-                //winrt::com_ptr<ID3D12InfoQueue> infoQueue = m_Device.as<ID3D12InfoQueue>();
-                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,      TRUE);
-                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,    TRUE);
+				D3D12_MESSAGE_ID denyIds[] {
+				    D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+				    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+				    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+				};
 
-                D3D12_MESSAGE_SEVERITY severities [] {
-                    D3D12_MESSAGE_SEVERITY_INFO
-                };
+				D3D12_INFO_QUEUE_FILTER newFilter{};
+				newFilter.DenyList.NumSeverities = static_cast<UINT>(std::size(severities));
+				newFilter.DenyList.pSeverityList = severities;
+				newFilter.DenyList.NumIDs = static_cast<UINT>(std::size(denyIds));
+				newFilter.DenyList.pIDList = denyIds;
+				iqhr = infoQueue->PushStorageFilter(&newFilter);
+				AssertIfFailed(iqhr);
+			#endif
+			}
 
-                D3D12_MESSAGE_ID denyIds[] {
-                    D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
-                    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
-                    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
-                };
+			/* Create Command Queue */ {
+				D3D12_COMMAND_QUEUE_DESC desc{};
+				desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+				desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+				desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+				desc.NodeMask = 0;
 
-                D3D12_INFO_QUEUE_FILTER newFilter{};
-                newFilter.DenyList.NumSeverities = static_cast<UINT>(std::size(severities));
-                newFilter.DenyList.pSeverityList = severities;
-                newFilter.DenyList.NumIDs = static_cast<UINT>(std::size(denyIds));
-                newFilter.DenyList.pIDList = denyIds;
-                iqhr = infoQueue->PushStorageFilter(&newFilter);
-                AssertIfFailed(iqhr);
-            #endif
-            }
+				auto cqhr = m_Device->CreateCommandQueue(&desc,
+				                                         __uuidof(ID3D12CommandQueue),
+				                                         m_CommandQueue.put_void());
+				AssertIfFailed(cqhr);
+			}
+		}
+		~DirectX12() = default;
 
-            /* Create Command Queue */ {
-                D3D12_COMMAND_QUEUE_DESC desc{};
-                desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-                desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-                desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-                desc.NodeMask = 0;
-
-                auto cqhr = m_Device->CreateCommandQueue(&desc,
-                                                         __uuidof(ID3D12CommandQueue),
-                                                         m_CommandQueue.put_void());
-                AssertIfFailed(cqhr);
-            }
-        }
-        ~DirectX12() = default;
-
-        HWND m_hWnd{};
-        Device_t m_Device;
-        CommandQueue_t m_CommandQueue;
-        SwapChain_t m_SwapChain;
-        std::array<Buffer_t, Num_Frames> m_BackBuffers;
-        CommandList_t m_CommandList;
-        std::array<CommandAllocator_t, Num_Frames> m_CommandAllocators;
-        DescriptorHeap_t m_RTVDescriptorHeap;
-        Fence_t m_Fence;
-    };
+		HWND m_hWnd{};
+		Device_t m_Device;
+		CommandQueue_t m_CommandQueue;
+		SwapChain_t m_SwapChain;
+		std::array<Buffer_t, Num_Frames> m_BackBuffers;
+		CommandList_t m_CommandList;
+		std::array<CommandAllocator_t, Num_Frames> m_CommandAllocators;
+		DescriptorHeap_t m_RTVDescriptorHeap;
+		Fence_t m_Fence;
+	};
 }
 
 int main()
 {
-    fmt::print("Direct X 12 - Lesson 1\n");
+	fmt::print("Direct X 12 - Lesson 1\n");
 
-    constexpr std::wstring_view wnd_title { L"Test Window" };
-    constexpr int wnd_width { 1280 },
-                  wnd_height { wnd_width * 10 / 16 };
+	constexpr std::wstring_view wnd_title { L"Test Window" };
+	constexpr int wnd_width { 1280 },
+	              wnd_height { wnd_width * 10 / 16 };
 
-    fmt::print(L"Window: \n\t Title: {} \n\t Width: {} \n\t Height: {} \n",
-                wnd_title, wnd_width, wnd_height);
+	fmt::print(L"Window: \n\t Title: {} \n\t Width: {} \n\t Height: {} \n",
+	            wnd_title, wnd_width, wnd_height);
 
-    Window::Window wnd(wnd_width, wnd_height, wnd_title);
+	Window::Window wnd(wnd_width, wnd_height, wnd_title);
 
-    Lesson1::DirectX12 d3d(wnd.m_hWnd);
+	Lesson1::DirectX12 d3d(wnd.m_hWnd);
 
-    wnd.Show();
+	wnd.Show();
 
-    while(wnd.m_hWnd)
-    {
-        wnd.ProcessMessages();
-    }
-
+	while(wnd.m_hWnd)
+	{
+		wnd.ProcessMessages();
+	}
 }
