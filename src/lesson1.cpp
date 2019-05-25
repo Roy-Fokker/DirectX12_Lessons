@@ -15,13 +15,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-namespace Helpers
-{
-    inline void AssertIfFailed(HRESULT hr)
-    {
-        assert(FAILED(hr));
-    }
-}
+#define AssertIfFailed(hr) assert(SUCCEEDED(hr))
 
 namespace Window
 {
@@ -55,8 +49,8 @@ namespace Window
             {
                 uint64_t windowPtr = reinterpret_cast<uint64_t>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams);
                 SetWindowLongPtr(hWnd,
-                                    GWLP_USERDATA,
-                                    windowPtr);
+                                 GWLP_USERDATA,
+                                 windowPtr);
             }
 
             auto wnd = reinterpret_cast<Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -166,8 +160,6 @@ namespace Window
 
 namespace Lesson1
 {
-    using namespace Helpers;
-
     static constexpr uint8_t Num_Frames = 3;
 
     struct DirectX12
@@ -207,10 +199,10 @@ namespace Lesson1
                 AssertIfFailed(dfhr);
             }
 
-            winrt::com_ptr<IDXGIAdapter4> dxgiAdapter4;
+            winrt::com_ptr<IDXGIAdapter4> dxgiAdapter4{};
             size_t maxDedicatedVideoMemory{};
             /* Get the adapter with Largest Video Memory */ {
-                winrt::com_ptr<IDXGIAdapter1> dxgiAdapter1;
+                winrt::com_ptr<IDXGIAdapter1> dxgiAdapter1{};
                 for (uint32_t i = 0; 
                     dxgiFactory->EnumAdapters1(i, dxgiAdapter1.put()) not_eq DXGI_ERROR_NOT_FOUND;
                     ++i)
@@ -218,13 +210,18 @@ namespace Lesson1
                     DXGI_ADAPTER_DESC1 dxgiAdapterDesc1{};
                     dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
 
+                    IDXGIAdapter1 *da1 = dxgiAdapter1.get();
+                    auto dchr = D3D12CreateDevice(da1, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr);
                     if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0
                         && dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory
-                        && D3D12CreateDevice(dxgiAdapter1.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr) == S_OK)
+                        && SUCCEEDED(dchr))
                     {
                         maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
-                        dxgiAdapter4 = dxgiAdapter1.as();
+                        auto dahr = dxgiAdapter1->QueryInterface<IDXGIAdapter4>(dxgiAdapter4.put());
+                        AssertIfFailed(dahr);
+                        //dxgiAdapter4 = dxgiAdapter1.as<IDXGIAdapter4>();
                     }
+                    dxgiAdapter1.detach();
                 }
             }
 
@@ -236,7 +233,10 @@ namespace Lesson1
                 AssertIfFailed(dhr);
 
             #ifdef _DEBUG
-                winrt::com_ptr<ID3D12InfoQueue> infoQueue = m_Device.as();
+                winrt::com_ptr<ID3D12InfoQueue> infoQueue;
+                auto iqhr = m_Device->QueryInterface<ID3D12InfoQueue>(infoQueue.put());
+                AssertIfFailed(iqhr);
+                //winrt::com_ptr<ID3D12InfoQueue> infoQueue = m_Device.as<ID3D12InfoQueue>();
                 infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
                 infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,      TRUE);
                 infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,    TRUE);
@@ -252,11 +252,11 @@ namespace Lesson1
                 };
 
                 D3D12_INFO_QUEUE_FILTER newFilter{};
-                newFilter.DenyList.NumSeverities = std::size(severities);
+                newFilter.DenyList.NumSeverities = static_cast<UINT>(std::size(severities));
                 newFilter.DenyList.pSeverityList = severities;
-                newFilter.DenyList.NumIDs = std::size(denyIds);
+                newFilter.DenyList.NumIDs = static_cast<UINT>(std::size(denyIds));
                 newFilter.DenyList.pIDList = denyIds;
-                auto iqhr = infoQueue->PushStorageFilter(&newFilter);
+                iqhr = infoQueue->PushStorageFilter(&newFilter);
                 AssertIfFailed(iqhr);
             #endif
             }

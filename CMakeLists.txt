@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -13,3 +13,6 @@ project(DirectX_12_Lesson
 add_definitions(-DUNICODE)
 
 add_subdirectory(src)
+
+
+# "-DCMAKE_TOOLCHAIN_FILE=D:/Projects/CPP/.packages/vcpkg/scripts/buildsystems/vcpkg.cmake"
