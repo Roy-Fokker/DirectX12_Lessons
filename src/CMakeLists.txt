@@ -19,3 +19,7 @@ target_link_libraries(lesson1
     d3d12.lib
     dxgi.lib
 )
+
+target_link_options(lesson1 PUBLIC
+    "/ENTRY:mainCRTStartup"
+)
