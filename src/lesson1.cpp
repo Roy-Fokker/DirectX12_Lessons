@@ -3,6 +3,8 @@
 
 #include <fmt/format.h>
 #include <string>
+#include <io.h>
+#include <fcntl.h>
 #include <Windows.h>
 
 #include <cstdint>
@@ -19,6 +21,7 @@
 #include <Initguid.h>
 #include <dxgidebug.h>
 
+static constexpr uint8_t Lesson_Num{ 1 };
 
 #define AssertIfFailed(hr) assert(SUCCEEDED(hr))
 
@@ -580,7 +583,7 @@ namespace Lesson1
 		if (elapsedSeconds > 1.0)
 		{
 			auto fps = frameCounter / elapsedSeconds;
-			fmt::print("\nFPS: {}", fps);
+			fmt::print(L"\nFPS: {}", fps);
 
 			frameCounter = 0;
 			elapsedSeconds = 0.0;
@@ -590,7 +593,9 @@ namespace Lesson1
 
 int main()
 {
-	fmt::print("Direct X 12 - Lesson 1\n");
+	auto r = _setmode(_fileno(stdout), _O_U8TEXT);
+
+	fmt::print(L"Direct X 12 - Lesson {}\n", Lesson_Num);
 
 	constexpr std::wstring_view wnd_title { L"Test Window" };
 	constexpr int wnd_width { 1280 },
@@ -614,5 +619,5 @@ int main()
 		wnd.ProcessMessages();
 	}
 
-	fmt::print("\nClosing Window\n");
+	fmt::print(L"\nClosing Window\n");
 }
