@@ -255,7 +255,6 @@ namespace Lesson1
 
 			/* Present */
 			{
-				// TODO: Are below two lines really required. Given that these were done before clear???????????
 				auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.get(),
 				                                                    D3D12_RESOURCE_STATE_RENDER_TARGET,
 				                                                    D3D12_RESOURCE_STATE_PRESENT);
