@@ -1,0 +1,4 @@
+set(LESSON_COMMON_SRC_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR} 
+    CACHE PATH "Lesson Common Src"
+)

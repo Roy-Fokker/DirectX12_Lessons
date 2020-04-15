@@ -1,25 +1,2 @@
-find_package(fmt)
-
-add_executable(lesson1
-    lesson1.cpp
-	d3dx12.h
-)
-
-target_compile_options(lesson1 PUBLIC
-    "/permissive-"
-)
-
-target_compile_definitions(lesson1 PRIVATE
-    DEBUG
-    _DEBUG
-)
-
-target_link_libraries(lesson1
-    fmt::fmt
-    d3d12.lib
-    dxgi.lib
-)
-
-target_link_options(lesson1 PUBLIC
-    "/ENTRY:mainCRTStartup"
-)
+add_subdirectory(common)
+add_subdirectory(L1.Basic_Window)
