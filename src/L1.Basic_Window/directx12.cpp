@@ -3,6 +3,8 @@
 
 #include "directx12.h"
 
+#include <dxgidebug.h>
+
 #include <cppitertools/count.hpp>
 #include <cppitertools/takewhile.hpp>
 #include <cppitertools/filter.hpp>
@@ -246,7 +248,6 @@ void directx_12::create_device(dxgi_adaptor adaptor)
 								__uuidof(ID3D12Device2),
 								device.put_void());
 	assert(SUCCEEDED(hr));
-
 
 #ifdef _DEBUG
 	winrt::com_ptr<ID3D12InfoQueue> infoQueue;
