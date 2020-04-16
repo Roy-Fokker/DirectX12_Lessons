@@ -3,8 +3,6 @@
 
 #include "directx12.h"
 
-#include <dxgidebug.h>
-
 #include <cppitertools/count.hpp>
 #include <cppitertools/takewhile.hpp>
 #include <cppitertools/filter.hpp>
@@ -16,7 +14,7 @@
 #include <cassert>
 #include <cstdint>
 
-using namespace terrain_render;
+using namespace learning_dx12;
 
 namespace
 {

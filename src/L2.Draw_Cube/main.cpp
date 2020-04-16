@@ -15,7 +15,7 @@ auto main() -> int
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	using namespace terrain_render;
+	using namespace learning_dx12;
 
 	constexpr int wnd_width{ 1280 },
 	              wnd_height{ wnd_width * 10 / 16 };
