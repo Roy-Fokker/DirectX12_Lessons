@@ -2,7 +2,7 @@
 
 #include "window_implementation.inl"
 
-using namespace terrain_render;
+using namespace learning_dx12;
 
 
 window::window(std::wstring_view title, const size &window_size, const style window_style, uint16_t window_icon)

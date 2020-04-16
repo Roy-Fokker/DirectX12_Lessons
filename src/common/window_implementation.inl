@@ -4,7 +4,7 @@
 #include <atlwin.h>
 #include <array>
 
-using namespace terrain_render;
+using namespace learning_dx12;
 
 struct window::window_implementation : public CWindowImpl<window::window_implementation>
 {

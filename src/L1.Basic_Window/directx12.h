@@ -14,7 +14,7 @@
 #endif // _DEBUG
 
 
-namespace terrain_render
+namespace learning_dx12
 {
 	class directx_12
 	{

@@ -16,7 +16,7 @@
 #include <cassert>
 #include <cstdint>
 
-using namespace terrain_render;
+using namespace learning_dx12;
 
 namespace
 {

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <functional>
 
-namespace terrain_render
+namespace learning_dx12
 {
 	class window
 	{
