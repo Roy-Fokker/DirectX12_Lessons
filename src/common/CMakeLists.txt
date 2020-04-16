@@ -2,6 +2,8 @@ add_library(lesson_common INTERFACE)
 
 target_sources(lesson_common
     INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/clock.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/clock.h
         ${CMAKE_CURRENT_SOURCE_DIR}/window.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/window.h
         ${CMAKE_CURRENT_SOURCE_DIR}/window_implementation.inl
