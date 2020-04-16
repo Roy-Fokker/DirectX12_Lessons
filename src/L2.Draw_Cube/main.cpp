@@ -20,7 +20,7 @@ auto main() -> int
 	constexpr int wnd_width{ 1280 },
 	              wnd_height{ wnd_width * 10 / 16 };
 
-	auto wnd = window(L"Learning DirectX 12: Basic Window",
+	auto wnd = window(L"Learning DirectX 12: Draw Cube",
 					  { wnd_width, wnd_height });
 
 	auto dx = directx_12(wnd.handle());
