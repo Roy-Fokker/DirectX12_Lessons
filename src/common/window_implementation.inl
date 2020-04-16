@@ -25,6 +25,7 @@ struct window::window_implementation : public CWindowImpl<window::window_impleme
 		MESSAGE_HANDLER(WM_ACTIVATEAPP, on_wnd_activate)
 		MESSAGE_HANDLER(WM_SIZE, on_wnd_resize)
 		MESSAGE_HANDLER(WM_KEYUP, on_wnd_keypress)
+		MESSAGE_HANDLER(WM_MOUSEMOVE, on_wnd_mousemove)
 	END_MSG_MAP()
 
 	LRESULT on_wnd_destroy(UINT msg, WPARAM wParam, LPARAM lParam, BOOL &bHandled)
@@ -69,6 +70,17 @@ struct window::window_implementation : public CWindowImpl<window::window_impleme
 	LRESULT on_wnd_keypress(UINT msg, WPARAM wParam, LPARAM lParam, BOOL &bHandled)
 	{
 		if (invoke_callback(message_type::keypress, wParam, lParam))
+		{
+			bHandled = TRUE;
+			return 0;
+		}
+
+		return DefWindowProc(msg, wParam, lParam);
+	}
+
+	LRESULT on_wnd_mousemove(UINT msg, WPARAM wParam, LPARAM lParam, BOOL &bHandled)
+	{
+		if (invoke_callback(message_type::mousemove, wParam, lParam))
 		{
 			bHandled = TRUE;
 			return 0;

@@ -28,9 +28,10 @@ namespace learning_dx12
 		{
 			resize,
 			activate,
-			keypress
+			keypress,
+			mousemove,
 		};
-		static constexpr uint8_t max_message_types = 3;
+		static constexpr uint8_t max_message_types = 4;
 
 		//using callback_method = auto (*) (uintptr_t, uintptr_t) -> bool;
 		using callback_method = std::function<bool(uintptr_t, uintptr_t)>;

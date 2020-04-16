@@ -7,6 +7,8 @@ using namespace learning_dx12;
 
 window::window(std::wstring_view title, const size &window_size, const style window_style, uint16_t window_icon)
 {
+	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
 	window_impl = std::make_unique<window_implementation>();
 
 	DWORD default_window_style = WS_OVERLAPPEDWINDOW,
