@@ -10,11 +10,6 @@ target_sources(lesson1
         directx12.h
 )
 
-# target_include_directories(lesson1
-#     PRIVATE
-#         ${LESSON_COMMON_SRC_DIR}
-# )
-
 target_link_libraries(lesson1
     PRIVATE
         project_configuration
