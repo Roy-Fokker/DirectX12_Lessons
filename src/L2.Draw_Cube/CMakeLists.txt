@@ -6,8 +6,13 @@ add_executable(lesson2)
 target_sources(lesson2
     PRIVATE
         main.cpp
+        dx_wrapped_types.h
         directx12.cpp
         directx12.h
+        cmd_queue.cpp
+        cmd_queue.h
+        draw_cube.cpp
+        draw_cube.h
 )
 
 target_link_libraries(lesson2

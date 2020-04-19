@@ -6,7 +6,8 @@
 #endif
 
 #include "window.h"
-#include "directx12.h"
+#include "clock.h"
+#include "draw_cube.h"
 
 auto main() -> int
 {
@@ -23,17 +24,30 @@ auto main() -> int
 	auto wnd = window(L"Learning DirectX 12: Draw Cube",
 					  { wnd_width, wnd_height });
 
-	auto dx = directx_12(wnd.handle());
+	auto cube = draw_cube(wnd.handle());
+
+	using msg = window::message_type;
+	wnd.set_message_callback(msg::keypress, [&](uintptr_t wParam, uintptr_t lParam) -> bool
+	{
+		return cube.on_key_press(wParam, lParam);
+	});
+
+	wnd.set_message_callback(msg::mousemove, [&](uintptr_t wParam, uintptr_t lParam) -> bool
+	{
+		return cube.on_mouse_move(wParam, lParam);
+	});
 
 	wnd.show();
 
-	while (wnd.handle())
+	auto clk = game_clock();
+	while (wnd.handle() and cube.continue_draw())
 	{
 		wnd.process_messages();
 
-		dx.clear();
+		clk.tick();
+		cube.update(clk.get_delta_s());
 
-		dx.present();
+		cube.render();
 	}
 
 	return 0;

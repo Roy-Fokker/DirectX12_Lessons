@@ -2,6 +2,9 @@
 #pragma comment(lib, "dxgi.lib")
 
 #include "directx12.h"
+#include "cmd_queue.h"
+
+#include "d3dx12.h"
 
 #include <cppitertools/count.hpp>
 #include <cppitertools/takewhile.hpp>
@@ -18,10 +21,6 @@ using namespace learning_dx12;
 
 namespace
 {
-	using dx = directx_12;
-	using dxgi_factory_5 = winrt::com_ptr<IDXGIFactory5>;
-	using dxgi_adaptor_1 = winrt::com_ptr<IDXGIAdapter1>;
-
 	constexpr auto vsync_enabled = TRUE;
 	constexpr auto clear_color = std::array{ 0.4f, 0.6f, 0.9f, 1.0f };
 
@@ -52,9 +51,9 @@ namespace
 		dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, TRUE);
 	}
 
-	auto get_dxgi_factory() -> dx::dxgi_factory
+	auto get_dxgi_factory() -> dxgi_factory_4
 	{
-		auto factory = dx::dxgi_factory{};
+		auto factory = dxgi_factory_4{};
 		uint32_t flags{};
 #ifdef _DEBUG
 		flags |= DXGI_CREATE_FACTORY_DEBUG;
@@ -68,7 +67,7 @@ namespace
 		return factory;
 	}
 
-	auto get_dxgi_adaptor(dx::dxgi_factory factory) -> dx::dxgi_adaptor
+	auto get_dxgi_adaptor(dxgi_factory_4 factory) -> dxgi_adaptor_4
 	{
 		auto adaptor1 = dxgi_adaptor_1{};
 
@@ -127,12 +126,12 @@ namespace
 		adaptor1 = nullptr;
 		factory->EnumAdapters1(adapter_index, adaptor1.put());
 
-		auto adaptor = dx::dxgi_adaptor{};
+		auto adaptor = dxgi_adaptor_4{};
 		auto hr = adaptor1->QueryInterface<IDXGIAdapter4>(adaptor.put());
 		return adaptor;
 	}
 
-	auto is_tearing_allowed(dx::dxgi_factory factory) -> bool
+	auto is_tearing_allowed(dxgi_factory_4 factory) -> bool
 	{
 		auto factory5 = dxgi_factory_5{};
 		auto hr = factory->QueryInterface<IDXGIFactory5>(factory5.put());
@@ -145,28 +144,6 @@ namespace
 
 		return SUCCEEDED(hr) 
 		   and (allow_tearing == TRUE);
-	}
-
-	auto signal_fence(dx::dx_cmd_queue queue, dx::dx_fence fence, uint64_t &fence_value) -> uint64_t
-	{
-		auto signal_fence_value = ++fence_value;
-		auto hr = queue->Signal(fence.get(), signal_fence_value);
-		assert(SUCCEEDED(hr));
-
-		return signal_fence_value;
-	}
-
-	auto wait_for_fence_value(dx::dx_fence fence, uint64_t fence_value, HANDLE event_handle, std::chrono::milliseconds duration)
-	{
-		if (fence->GetCompletedValue() >= fence_value)
-		{
-			return;
-		}
-
-		auto hr = fence->SetEventOnCompletion(fence_value, event_handle);
-		assert(SUCCEEDED(hr));
-
-		::WaitForSingleObject(event_handle, static_cast<DWORD>(duration.count()));
 	}
 }
 
@@ -186,60 +163,43 @@ directx_12::directx_12(HWND hWnd) :
 
 	create_device(adaptor);
 	
-	create_command_queue();
-	create_command_allocators();
-	create_command_list();
+	command_queue = std::make_unique<cmd_queue>(device, cmd_queue_type::direct);
 
 	create_swapchain(factory);
 	create_rendertarget_heap();
 	create_back_buffers();
-
-	create_fence();
-	create_event_handle();
 }
 
-directx_12::~directx_12()
-{
-	auto fence_value = signal_fence(command_queue,
-									fence,
-									current_fence_value);
-	wait_for_fence_value(fence,
-						 fence_value,
-						 fence_event_handle,
-						 std::chrono::milliseconds::max());
-
-	::CloseHandle(fence_event_handle);
-}
+directx_12::~directx_12() = default;
 
 void directx_12::clear()
 {
-	open_command_list();
-
-	set_buffer_to_render();
+	auto barrier = transition_buffer(buffer_state::render_target);
+	auto cmd_list = command_queue->get_command_list(active_back_buffer_index, barrier);
 
 	auto rtv = CD3DX12_CPU_DESCRIPTOR_HANDLE(rendertarget_heap->GetCPUDescriptorHandleForHeapStart(),
 											 active_back_buffer_index,
 											 rendertarget_heap_size);
 
-	command_list->ClearRenderTargetView(rtv,
-										clear_color.data(),
-										0,
-										nullptr);
+	cmd_list->ClearRenderTargetView(rtv,
+									clear_color.data(),
+									0,
+									nullptr);
 }
 
 void directx_12::present()
 {
-	set_buffer_to_present();
+	auto barrier = transition_buffer(buffer_state::present);
 
-	close_execute_command_list();
+	command_queue->execute_command_list(active_back_buffer_index, barrier);
 
 	auto hr = swapchain->Present(vsync_enabled, present_flags);
 	assert(SUCCEEDED(hr));
 
-	next_fence_and_buffer();
+	active_back_buffer_index = swapchain->GetCurrentBackBufferIndex();
 }
 
-void directx_12::create_device(dxgi_adaptor adaptor)
+void directx_12::create_device(dxgi_adaptor_4 adaptor)
 {
 	auto hr = D3D12CreateDevice(adaptor.get(),
 								D3D_FEATURE_LEVEL_11_0,
@@ -276,46 +236,7 @@ void directx_12::create_device(dxgi_adaptor adaptor)
 #endif
 }
 
-void directx_12::create_command_queue()
-{
-	auto desc = D3D12_COMMAND_QUEUE_DESC{};
-	desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-	desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	desc.NodeMask = 0;
-
-	auto hr = device->CreateCommandQueue(&desc,
-										 __uuidof(ID3D12CommandQueue),
-										 command_queue.put_void());
-	assert(SUCCEEDED(hr));
-}
-
-void directx_12::create_command_allocators()
-{
-	for (auto &cmd_alloc : command_allocators)
-	{
-		auto hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-												 __uuidof(ID3D12CommandAllocator),
-												 cmd_alloc.put_void());
-		assert(SUCCEEDED(hr));
-	}
-}
-
-void directx_12::create_command_list()
-{
-	auto hr = device->CreateCommandList(NULL,
-										D3D12_COMMAND_LIST_TYPE_DIRECT,
-										command_allocators.front().get(),
-										nullptr,
-										__uuidof(ID3D12GraphicsCommandList),
-										command_list.put_void());
-	assert(SUCCEEDED(hr));
-
-	hr = command_list->Close();
-	assert(SUCCEEDED(hr));
-}
-
-void directx_12::create_swapchain(dxgi_factory factory)
+void directx_12::create_swapchain(dxgi_factory_4 factory)
 {
 	auto [width, height] = get_window_size(hWnd);
 
@@ -326,14 +247,14 @@ void directx_12::create_swapchain(dxgi_factory factory)
 	desc.Stereo = FALSE;
 	desc.SampleDesc = { 1, 0 };
 	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.BufferCount = num_frame_buffers;
+	desc.BufferCount = frame_buffer_count;
 	desc.Scaling = DXGI_SCALING_STRETCH;
 	desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	desc.Flags = present_flags;
 
 	auto swapChain1 = winrt::com_ptr<IDXGISwapChain1>{};
-	auto hr = factory->CreateSwapChainForHwnd(command_queue.get(),
+	auto hr = factory->CreateSwapChainForHwnd(command_queue->command_queue.get(),
 											  hWnd,
 											  &desc,
 											  nullptr,
@@ -346,14 +267,13 @@ void directx_12::create_swapchain(dxgi_factory factory)
 
 	hr = swapChain1->QueryInterface<IDXGISwapChain4>(swapchain.put());
 	assert(SUCCEEDED(hr));
-
 }
 
 void directx_12::create_rendertarget_heap()
 {
 	auto desc = D3D12_DESCRIPTOR_HEAP_DESC{};
 	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	desc.NumDescriptors = num_frame_buffers;
+	desc.NumDescriptors = frame_buffer_count;
 
 	rendertarget_heap_size = device->GetDescriptorHandleIncrementSize(desc.Type);
 
@@ -381,76 +301,34 @@ void directx_12::create_back_buffers()
 
 		rendertarget_handle.Offset(rendertarget_heap_size);
 	}
+
+	for (auto &&[i, state] : back_buffer_states | iter::enumerate)
+	{
+		state = buffer_state::present;
+	}
 }
 
-void directx_12::create_fence()
+auto directx_12::transition_buffer(buffer_state state) -> CD3DX12_RESOURCE_BARRIER
 {
-	auto hr = device->CreateFence(0,
-								  D3D12_FENCE_FLAG_NONE,
-								  __uuidof(ID3D12Fence),
-								  fence.put_void());
-	assert(SUCCEEDED(hr));
-}
-
-void directx_12::create_event_handle()
-{
-	fence_event_handle = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-	assert(fence_event_handle);
-}
-
-void directx_12::open_command_list()
-{
-	auto command_allocator = command_allocators.at(active_back_buffer_index);
-	command_allocator->Reset();
-	command_list->Reset(command_allocator.get(), nullptr);
-}
-
-void directx_12::close_execute_command_list()
-{
-	auto hr = command_list->Close();
-	assert(SUCCEEDED(hr));
-
-	auto command_lists = std::array { (ID3D12CommandList *const)
-		command_list.get()
+	auto map_state_to_uint = [](buffer_state state) -> D3D12_RESOURCE_STATES
+	{
+		switch (state)
+		{
+			case buffer_state::render_target:
+				return D3D12_RESOURCE_STATE_RENDER_TARGET;
+			case buffer_state::present:
+				return D3D12_RESOURCE_STATE_PRESENT;
+		}
+		return {};
 	};
 
-	command_queue->ExecuteCommandLists(static_cast<uint32_t>(command_lists.size()),
-									   command_lists.data());
+	auto buffer = back_buffers.at(active_back_buffer_index);
+	auto prev_state = map_state_to_uint(back_buffer_states.at(active_back_buffer_index));
+	auto next_state = map_state_to_uint(state);
+	
+	back_buffer_states[active_back_buffer_index] = state;
+
+	return CD3DX12_RESOURCE_BARRIER::Transition(buffer.get(),
+												prev_state,
+												next_state);
 }
-
-void directx_12::set_buffer_to_render()
-{
-	auto back_buffer = back_buffers.at(active_back_buffer_index);
-
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(back_buffer.get(),
-														D3D12_RESOURCE_STATE_PRESENT,
-														D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	command_list->ResourceBarrier(1, &barrier);
-}
-
-void directx_12::set_buffer_to_present()
-{
-	auto back_buffer = back_buffers.at(active_back_buffer_index);
-
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(back_buffer.get(),
-														D3D12_RESOURCE_STATE_RENDER_TARGET,
-														D3D12_RESOURCE_STATE_PRESENT);
-
-	command_list->ResourceBarrier(1, &barrier);
-}
-
-void directx_12::next_fence_and_buffer()
-{
-	frame_fence_values[active_back_buffer_index] = signal_fence(command_queue,
-																fence,
-																current_fence_value);
-
-	active_back_buffer_index = swapchain->GetCurrentBackBufferIndex();
-
-	wait_for_fence_value(fence, 
-						 frame_fence_values[active_back_buffer_index],
-						 fence_event_handle,
-						 std::chrono::milliseconds::max());
-}
-
