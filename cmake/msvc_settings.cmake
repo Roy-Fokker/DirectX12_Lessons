@@ -12,6 +12,7 @@ function(set_msvc_project_configuration project_name)
 
     set(MSVC_LINKER_FLAGS
         /ENTRY:mainCRTStartup # use int main() as entry point.
+        /SUBSYSTEM:Windows    # it's a windows program, no console.
     )
 
     set(MSVC_COMPILE_DEFINITIONS
