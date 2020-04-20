@@ -9,6 +9,24 @@
 #include "clock.h"
 #include "draw_cube.h"
 
+#ifdef _DEBUG
+#include <dxgi1_3.h>
+#include <dxgidebug.h>
+#include <winrt\base.h>
+#include <cstdlib>
+
+void report_live_dx_objects()
+{
+	winrt::com_ptr<IDXGIDebug1> debug{};
+
+	DXGIGetDebugInterface1(NULL,
+						   __uuidof(IDXGIDebug1),
+						   debug.put_void());
+
+	debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
+}
+#endif
+
 auto main() -> int
 {
 #ifdef _DEBUG
@@ -49,6 +67,11 @@ auto main() -> int
 
 		cube.render();
 	}
+
+#ifdef _DEBUG
+	std::atexit(&report_live_dx_objects);
+#endif // _DEBUG
+
 
 	return 0;
 }
