@@ -49,21 +49,22 @@ cmd_queue::~cmd_queue()
 	::CloseHandle(fence_event);
 }
 
-auto cmd_queue::get_command_list(uint8_t buffer_index, CD3DX12_RESOURCE_BARRIER &barrier) -> dx_cmd_list
+void cmd_queue::set_command_list_barrier(CD3DX12_RESOURCE_BARRIER &barrier)
+{
+	command_list->ResourceBarrier(1, &barrier);
+}
+
+auto cmd_queue::get_command_list(uint8_t buffer_index) -> dx_cmd_list
 {
 	wait_for_previous_frame(buffer_index);
 
 	open_command_list(buffer_index);
 
-	command_list->ResourceBarrier(1, &barrier);
-
 	return command_list;
 }
 
-void cmd_queue::execute_command_list(uint8_t buffer_index, CD3DX12_RESOURCE_BARRIER &barrier)
+void cmd_queue::execute_command_list(uint8_t buffer_index)
 {
-	command_list->ResourceBarrier(1, &barrier);
-
 	close_command_list();
 
 	execute_command_list();

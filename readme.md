@@ -3,6 +3,8 @@
 ## References
 - https://www.3dgep.com/category/graphics-programming/directx/directx-12/
 - http://alextardif.com/D3D11To12P1.html
+- http://alextardif.com/D3D11To12P2.html
+- http://alextardif.com/D3D11To12P3.html
 - http://alextardif.com/RenderingAbstractionLayers.html
 - https://docs.microsoft.com/en-us/windows/win32/direct3d12/directx-12-programming-guide
 
@@ -10,14 +12,14 @@
 - L1.Basic_Window
 - L2.Draw_Cube
 
-## Basic Program Flow
+## Program Flow
 ```flow
 start 
 |
-create window 
+create window
 |
 initialize directx 12 
-|-> enable directx debug layer
+|-> enable directx debug layer 
 |-> init dx device
 |-> init cmd queue, allocator & list -> close command list
 |-> init gpu fences and event
@@ -27,13 +29,13 @@ initialize directx 12
 |
 set window callbacks
 |-> on keypress
-|   |-> stop drawing
+|   |-> escape -> stop-drawing
 |-> on mousemove
 |   |-> *nothing*
 |
 show window
 |
-loop while window exists and continue to draw
+loop while window-exists and not stop-drawing
 |-> process window messages
 |-> clock tick
 |-> update frame

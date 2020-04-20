@@ -3,6 +3,7 @@
 
 #include "directx12.h"
 #include "cmd_queue.h"
+#include "gpu_resource.h"
 
 #include "d3dx12.h"
 
@@ -49,6 +50,35 @@ namespace
 
 		dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, TRUE);
 		dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+	}
+
+	void debug_info_queue(dx_device &device)
+	{
+		winrt::com_ptr<ID3D12InfoQueue> infoQueue;
+		auto hr = device->QueryInterface<ID3D12InfoQueue>(infoQueue.put());
+		assert(SUCCEEDED(hr));
+
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+
+		D3D12_MESSAGE_SEVERITY severities[]{
+			D3D12_MESSAGE_SEVERITY_INFO
+		};
+
+		D3D12_MESSAGE_ID denyIds[]{
+			D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+			D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+			D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+		};
+
+		D3D12_INFO_QUEUE_FILTER newFilter{};
+		newFilter.DenyList.NumSeverities = static_cast<UINT>(std::size(severities));
+		newFilter.DenyList.pSeverityList = severities;
+		newFilter.DenyList.NumIDs = static_cast<UINT>(std::size(denyIds));
+		newFilter.DenyList.pIDList = denyIds;
+		hr = infoQueue->PushStorageFilter(&newFilter);
+		assert(SUCCEEDED(hr));
 	}
 
 	auto get_dxgi_factory() -> dxgi_factory_4
@@ -174,8 +204,10 @@ directx_12::~directx_12() = default;
 
 void directx_12::clear()
 {
-	auto barrier = transition_buffer(buffer_state::render_target);
-	auto cmd_list = command_queue->get_command_list(active_back_buffer_index, barrier);
+	auto cmd_list = command_queue->get_command_list(active_back_buffer_index);
+
+	auto barrier = back_buffers.at(active_back_buffer_index)->transition_to(resource_state::render_target);
+	command_queue->set_command_list_barrier(barrier);
 
 	auto rtv = CD3DX12_CPU_DESCRIPTOR_HANDLE(rendertarget_heap->GetCPUDescriptorHandleForHeapStart(),
 											 active_back_buffer_index,
@@ -189,9 +221,10 @@ void directx_12::clear()
 
 void directx_12::present()
 {
-	auto barrier = transition_buffer(buffer_state::present);
+	auto barrier = back_buffers.at(active_back_buffer_index)->transition_to(resource_state::present);
+	command_queue->set_command_list_barrier(barrier);
 
-	command_queue->execute_command_list(active_back_buffer_index, barrier);
+	command_queue->execute_command_list(active_back_buffer_index);
 
 	auto hr = swapchain->Present(vsync_enabled, present_flags);
 	assert(SUCCEEDED(hr));
@@ -208,31 +241,7 @@ void directx_12::create_device(dxgi_adaptor_4 adaptor)
 	assert(SUCCEEDED(hr));
 
 #ifdef _DEBUG
-	winrt::com_ptr<ID3D12InfoQueue> infoQueue;
-	hr = device->QueryInterface<ID3D12InfoQueue>(infoQueue.put());
-	assert(SUCCEEDED(hr));
-
-	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
-
-	D3D12_MESSAGE_SEVERITY severities[]{
-		D3D12_MESSAGE_SEVERITY_INFO
-	};
-
-	D3D12_MESSAGE_ID denyIds[]{
-		D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
-		D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
-		D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
-	};
-
-	D3D12_INFO_QUEUE_FILTER newFilter{};
-	newFilter.DenyList.NumSeverities = static_cast<UINT>(std::size(severities));
-	newFilter.DenyList.pSeverityList = severities;
-	newFilter.DenyList.NumIDs = static_cast<UINT>(std::size(denyIds));
-	newFilter.DenyList.pIDList = denyIds;
-	hr = infoQueue->PushStorageFilter(&newFilter);
-	assert(SUCCEEDED(hr));
+	debug_info_queue(device);
 #endif
 }
 
@@ -267,6 +276,8 @@ void directx_12::create_swapchain(dxgi_factory_4 factory)
 
 	hr = swapChain1->QueryInterface<IDXGISwapChain4>(swapchain.put());
 	assert(SUCCEEDED(hr));
+
+	active_back_buffer_index = swapchain->GetCurrentBackBufferIndex();
 }
 
 void directx_12::create_rendertarget_heap()
@@ -290,45 +301,19 @@ void directx_12::create_back_buffers()
 
 	for (auto &&[i, back_buffer] : back_buffers | iter::enumerate)
 	{
+		auto buffer = dx_resource{};
 		auto hr = swapchain->GetBuffer(static_cast<uint32_t>(i),
 									   __uuidof(ID3D12Resource),
-									   back_buffer.put_void());
+									   buffer.put_void());
 		assert(SUCCEEDED(hr));
 
-		device->CreateRenderTargetView(back_buffer.get(),
+		device->CreateRenderTargetView(buffer.get(),
 									   nullptr,
 									   rendertarget_handle);
 
 		rendertarget_handle.Offset(rendertarget_heap_size);
+
+		back_buffer = std::make_unique<gpu_resource>(buffer, resource_state::present);
 	}
 
-	for (auto &&[i, state] : back_buffer_states | iter::enumerate)
-	{
-		state = buffer_state::present;
-	}
-}
-
-auto directx_12::transition_buffer(buffer_state state) -> CD3DX12_RESOURCE_BARRIER
-{
-	auto map_state_to_uint = [](buffer_state state) -> D3D12_RESOURCE_STATES
-	{
-		switch (state)
-		{
-			case buffer_state::render_target:
-				return D3D12_RESOURCE_STATE_RENDER_TARGET;
-			case buffer_state::present:
-				return D3D12_RESOURCE_STATE_PRESENT;
-		}
-		return {};
-	};
-
-	auto buffer = back_buffers.at(active_back_buffer_index);
-	auto prev_state = map_state_to_uint(back_buffer_states.at(active_back_buffer_index));
-	auto next_state = map_state_to_uint(state);
-	
-	back_buffer_states[active_back_buffer_index] = state;
-
-	return CD3DX12_RESOURCE_BARRIER::Transition(buffer.get(),
-												prev_state,
-												next_state);
 }

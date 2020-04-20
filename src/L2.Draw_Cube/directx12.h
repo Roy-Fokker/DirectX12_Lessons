@@ -19,12 +19,7 @@ struct CD3DX12_RESOURCE_BARRIER;
 namespace learning_dx12
 {
 	class cmd_queue;
-
-	enum class buffer_state
-	{
-		render_target,
-		present,
-	};
+	class gpu_resource;
 
 	class directx_12
 	{
@@ -42,18 +37,20 @@ namespace learning_dx12
 		void create_rendertarget_heap();
 		void create_back_buffers();
 		
-		auto transition_buffer(buffer_state state) -> CD3DX12_RESOURCE_BARRIER;
-
 	private:
+		using gpu_resource_p = std::unique_ptr<gpu_resource>;
+		using cmd_queue_p = std::unique_ptr<cmd_queue>;
+
 		HWND hWnd{};
 		dx_device device{};
 		dx_swapchain swapchain{};
-		std::unique_ptr<cmd_queue> command_queue{};
+		
+		cmd_queue_p command_queue{};
 
 		dx_descriptor_heap rendertarget_heap{};
 		uint32_t rendertarget_heap_size{};
-		std::array<dx_resource, frame_buffer_count> back_buffers{};
-		std::array<buffer_state, frame_buffer_count> back_buffer_states{};
+
+		std::array<gpu_resource_p, frame_buffer_count> back_buffers;
 		uint8_t active_back_buffer_index{};
 
 		uint32_t present_flags = {};

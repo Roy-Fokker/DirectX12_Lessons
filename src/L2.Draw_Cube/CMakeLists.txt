@@ -13,7 +13,8 @@ target_sources(lesson2
         cmd_queue.h
         draw_cube.cpp
         draw_cube.h
-)
+        gpu_resource.cpp
+        gpu_resource.h)
 
 target_link_libraries(lesson2
     PRIVATE
