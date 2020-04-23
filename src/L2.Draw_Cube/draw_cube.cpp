@@ -55,7 +55,7 @@ void draw_cube::update(double dt)
 
 void draw_cube::render()
 {
-	dx->clear();
+	auto cmd_list = dx->get_cleared_cmd_list();
 
 	dx->present();
 }

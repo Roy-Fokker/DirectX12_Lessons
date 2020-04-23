@@ -28,8 +28,10 @@ namespace learning_dx12
 		directx_12(HWND hWnd);
 		~directx_12();
 
-		void clear();
+		auto get_cleared_cmd_list() -> dx_cmd_list;
 		void present();
+
+		auto get_device() const -> dx_device;
 
 	private:
 		void create_device(dxgi_adaptor_4 adaptor);

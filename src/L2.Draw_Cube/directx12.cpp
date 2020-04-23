@@ -206,7 +206,7 @@ directx_12::directx_12(HWND hWnd) :
 
 directx_12::~directx_12() = default;
 
-void directx_12::clear()
+auto directx_12::get_cleared_cmd_list() -> dx_cmd_list
 {
 	auto cmd_list = command_queue->get_command_list(active_back_buffer_index);
 
@@ -216,6 +216,7 @@ void directx_12::clear()
 	clear_rendertarget(cmd_list);
 	clear_depthstencil(cmd_list);
 
+	return cmd_list;
 }
 
 void directx_12::present()
@@ -229,6 +230,11 @@ void directx_12::present()
 	assert(SUCCEEDED(hr));
 
 	active_back_buffer_index = swapchain->GetCurrentBackBufferIndex();
+}
+
+auto directx_12::get_device() const -> dx_device
+{
+	return device;
 }
 
 void directx_12::create_device(dxgi_adaptor_4 adaptor)
