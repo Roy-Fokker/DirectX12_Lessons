@@ -94,8 +94,8 @@ void cmd_queue::create_command_queue(dx_device device)
 	desc.NodeMask = NULL;
 
 	auto hr = device->CreateCommandQueue(&desc,
-										 __uuidof(ID3D12CommandQueue),
-										 command_queue.put_void());
+	                                     __uuidof(ID3D12CommandQueue),
+	                                     command_queue.put_void());
 	assert(SUCCEEDED(hr));
 }
 
@@ -104,8 +104,8 @@ void cmd_queue::create_command_allocators(dx_device device)
 	for (auto &allocator : command_allocators)
 	{
 		auto hr = device->CreateCommandAllocator(map_to_cmd_list_type(type),
-												 __uuidof(ID3D12CommandAllocator),
-												 allocator.put_void());
+		                                         __uuidof(ID3D12CommandAllocator),
+		                                         allocator.put_void());
 		assert(SUCCEEDED(hr));
 	}
 }
@@ -113,11 +113,11 @@ void cmd_queue::create_command_allocators(dx_device device)
 void cmd_queue::create_command_list(dx_device device)
 {
 	auto hr = device->CreateCommandList(NULL,
-										map_to_cmd_list_type(type),
-										command_allocators.front().get(),
-										nullptr,
-										__uuidof(ID3D12CommandList),
-										command_list.put_void());
+	                                    map_to_cmd_list_type(type),
+	                                    command_allocators.front().get(),
+	                                    nullptr,
+	                                    __uuidof(ID3D12CommandList),
+	                                    command_list.put_void());
 	assert(SUCCEEDED(hr));
 
 	close_command_list();
@@ -128,9 +128,9 @@ void cmd_queue::create_fences(dx_device device)
 	auto create_fence = [&](dx_fence &fence)
 	{
 		auto hr = device->CreateFence(0,
-									  D3D12_FENCE_FLAG_NONE,
-									  __uuidof(ID3D12Fence),
-									  fence.put_void());
+		                              D3D12_FENCE_FLAG_NONE,
+		                              __uuidof(ID3D12Fence),
+		                              fence.put_void());
 		assert(SUCCEEDED(hr));
 	};
 
@@ -144,9 +144,9 @@ void cmd_queue::create_fences(dx_device device)
 void cmd_queue::create_fence_event_handle()
 {
 	fence_event = ::CreateEvent(NULL,
-								FALSE,
-								FALSE,
-								NULL);
+	                            FALSE,
+	                            FALSE,
+	                            NULL);
 	assert(fence_event);
 }
 
@@ -170,7 +170,7 @@ void cmd_queue::execute_command_list()
 	};
 
 	command_queue->ExecuteCommandLists(static_cast<uint32_t>(cmd_lists.size()),
-									   cmd_lists.data());
+	                                   cmd_lists.data());
 }
 
 void cmd_queue::wait_for_previous_frame(uint8_t buffer_index)
@@ -195,6 +195,6 @@ void cmd_queue::set_frame_complete_signal(uint8_t buffer_index)
 	signal_value++;
 
 	auto hr = command_queue->Signal(fence.get(),
-									signal_value);
+	                                signal_value);
 	assert(SUCCEEDED(hr));
 }

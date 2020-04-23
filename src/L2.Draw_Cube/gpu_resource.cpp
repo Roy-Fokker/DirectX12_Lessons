@@ -40,6 +40,6 @@ auto gpu_resource::transition_to(resource_state state) -> CD3DX12_RESOURCE_BARRI
 	assert(prev_state != current_state);
 	
 	return CD3DX12_RESOURCE_BARRIER::Transition(resource.get(),
-												prev_state,
-												current_state);
+	                                            prev_state,
+	                                            current_state);
 }

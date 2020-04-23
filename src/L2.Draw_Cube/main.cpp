@@ -20,8 +20,8 @@ void report_live_dx_objects()
 	winrt::com_ptr<IDXGIDebug1> debug{};
 
 	DXGIGetDebugInterface1(NULL,
-						   __uuidof(IDXGIDebug1),
-						   debug.put_void());
+	                       __uuidof(IDXGIDebug1),
+	                       debug.put_void());
 
 	debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
 }
@@ -40,7 +40,7 @@ auto main() -> int
 	              wnd_height{ wnd_width * 10 / 16 };
 
 	auto wnd = window(L"Learning DirectX 12: Draw Cube",
-					  { wnd_width, wnd_height });
+	                  { wnd_width, wnd_height });
 
 	auto cube = draw_cube(wnd.handle());
 

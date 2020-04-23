@@ -91,8 +91,8 @@ namespace
 #endif // _DEBUG
 
 		auto hr = CreateDXGIFactory2(flags,
-									 __uuidof(IDXGIFactory4),
-									 factory.put_void());
+		                             __uuidof(IDXGIFactory4),
+		                             factory.put_void());
 		assert(SUCCEEDED(hr));
 
 		return factory;
@@ -120,17 +120,17 @@ namespace
 		{
 			auto p_adaptor1 = adaptor1.get();
 			auto hr = D3D12CreateDevice(p_adaptor1,
-										D3D_FEATURE_LEVEL_11_0,
-										__uuidof(ID3D12Device),
-										nullptr);
+			                            D3D_FEATURE_LEVEL_11_0,
+			                            __uuidof(ID3D12Device),
+			                            nullptr);
 
 			return SUCCEEDED(hr);
 		};
 
 		auto adaptors = iter::count()
-			| iter::takewhile(device_found)
-			| iter::filter(is_not_warp)
-			| iter::filter(can_create_device);
+		              | iter::takewhile(device_found)
+		              | iter::filter(is_not_warp)
+		              | iter::filter(can_create_device);
 
 		auto max_dedicated_video_memory = size_t{};
 		auto index_with_most_memory = [&](uint32_t prev_index, const uint32_t index) -> uint32_t
@@ -151,8 +151,8 @@ namespace
 		};
 
 		auto adapter_index = std::accumulate(adaptors.begin(), adaptors.end(),
-											 uint32_t{},
-											 index_with_most_memory);
+		                                     uint32_t{},
+		                                     index_with_most_memory);
 
 		adaptor1 = nullptr;
 		factory->EnumAdapters1(adapter_index, adaptor1.put());
@@ -170,8 +170,8 @@ namespace
 
 		auto allow_tearing = FALSE;
 		hr = factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-										   &allow_tearing,
-										   sizeof BOOL);
+		                                   &allow_tearing,
+		                                   sizeof BOOL);
 
 		return SUCCEEDED(hr) 
 		   and (allow_tearing == TRUE);
@@ -263,11 +263,11 @@ void directx_12::create_swapchain(dxgi_factory_4 factory)
 
 	auto swapChain1 = winrt::com_ptr<IDXGISwapChain1>{};
 	auto hr = factory->CreateSwapChainForHwnd(command_queue->command_queue.get(),
-											  hWnd,
-											  &desc,
-											  nullptr,
-											  nullptr,
-											  swapChain1.put());
+	                                          hWnd,
+	                                          &desc,
+	                                          nullptr,
+	                                          nullptr,
+	                                          swapChain1.put());
 	assert(SUCCEEDED(hr));
 
 	hr = factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
@@ -288,8 +288,8 @@ void directx_12::create_rendertarget_heap()
 	rendertarget_heap_size = device->GetDescriptorHandleIncrementSize(desc.Type);
 
 	auto hr = device->CreateDescriptorHeap(&desc,
-										   __uuidof(ID3D12DescriptorHeap),
-										   rendertarget_heap.put_void());
+	                                       __uuidof(ID3D12DescriptorHeap),
+	                                       rendertarget_heap.put_void());
 	assert(SUCCEEDED(hr));
 }
 
@@ -314,13 +314,13 @@ void directx_12::create_back_buffers()
 	{
 		auto buffer = dx_resource{};
 		auto hr = swapchain->GetBuffer(static_cast<uint32_t>(i),
-									   __uuidof(ID3D12Resource),
-									   buffer.put_void());
+		                               __uuidof(ID3D12Resource),
+		                               buffer.put_void());
 		assert(SUCCEEDED(hr));
 
 		device->CreateRenderTargetView(buffer.get(),
-									   nullptr,
-									   rendertarget_handle);
+		                               nullptr,
+		                               rendertarget_handle);
 
 		rendertarget_handle.Offset(rendertarget_heap_size);
 
