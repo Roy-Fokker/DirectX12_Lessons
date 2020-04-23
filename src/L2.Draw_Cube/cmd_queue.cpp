@@ -30,13 +30,23 @@ namespace
 }
 
 cmd_queue::cmd_queue(dx_device device, cmd_queue_type type_) :
+	cmd_queue(device, type_, frame_buffer_count)
+{}
+
+cmd_queue::cmd_queue(dx_device device, cmd_queue_type type_, size_t buffer_count) :
 	type{type_}
 {
+	command_allocators.resize(buffer_count);
+	fences.resize(buffer_count);
+
 	create_command_queue(device);
 	create_command_allocators(device);
 	create_command_list(device);
 	create_fences(device);
 	create_fence_event_handle();
+
+	command_allocators.shrink_to_fit();
+	fences.shrink_to_fit();
 }
 
 cmd_queue::~cmd_queue()

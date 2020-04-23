@@ -6,7 +6,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#include <array>
+#include <vector>
 
 struct CD3DX12_RESOURCE_BARRIER;
 
@@ -30,6 +30,7 @@ namespace learning_dx12
 
 	public:
 		cmd_queue(dx_device device, cmd_queue_type type);
+		cmd_queue(dx_device device, cmd_queue_type type, size_t buffer_count);
 		cmd_queue() = delete;
 		~cmd_queue();
 
@@ -57,10 +58,10 @@ namespace learning_dx12
 		const cmd_queue_type type{};
 		dx_cmd_queue command_queue{};
 		
-		std::array<dx_cmd_allocator, frame_buffer_count> command_allocators;
+		std::vector<dx_cmd_allocator> command_allocators{};
 		dx_cmd_list command_list;
 
-		std::array<frame_fence, frame_buffer_count> fences;
+		std::vector<frame_fence> fences{};
 		HANDLE fence_event;
 
 	private:
