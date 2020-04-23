@@ -37,6 +37,8 @@ namespace learning_dx12
 		auto get_command_list(uint8_t buffer_index ) -> dx_cmd_list;
 		void execute_command_list(uint8_t buffer_index);
 
+		void set_name(LPCWSTR name_prefix);
+
 	private:
 		void create_command_queue(dx_device device);
 		void create_command_allocators(dx_device device);

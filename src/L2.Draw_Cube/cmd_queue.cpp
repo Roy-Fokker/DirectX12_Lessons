@@ -3,6 +3,7 @@
 #include "d3dx12.h"
 
 #include <cppitertools/enumerate.hpp>
+#include <string>
 
 using namespace learning_dx12;
 
@@ -70,6 +71,18 @@ void cmd_queue::execute_command_list(uint8_t buffer_index)
 	execute_command_list();
 
 	set_frame_complete_signal(buffer_index);
+}
+
+void cmd_queue::set_name(LPCWSTR name_prefix)
+{
+	auto name = std::wstring{name_prefix};
+
+	name += L" queue";
+	command_queue->SetName(name.c_str());
+
+	name = name_prefix;
+	name += L" cmd list";
+	command_list->SetName(name.c_str());
 }
 
 void cmd_queue::create_command_queue(dx_device device)
