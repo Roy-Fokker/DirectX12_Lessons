@@ -24,6 +24,7 @@ namespace
 {
 	constexpr auto vsync_enabled = TRUE;
 	constexpr auto clear_color = std::array{ 0.4f, 0.6f, 0.9f, 1.0f };
+	constexpr auto dsv_buffer_count = 1;
 
 	auto get_window_size(HWND hWnd) -> std::tuple<uint32_t, uint32_t>
 	{
@@ -198,6 +199,9 @@ directx_12::directx_12(HWND hWnd) :
 	create_swapchain(factory);
 	create_rendertarget_heap();
 	create_back_buffers();
+
+	create_depthstencil_heap();
+	create_depthstencil_buffer();
 }
 
 directx_12::~directx_12() = default;
@@ -209,14 +213,9 @@ void directx_12::clear()
 	auto barrier = back_buffers.at(active_back_buffer_index)->transition_to(resource_state::render_target);
 	command_queue->set_command_list_barrier(barrier);
 
-	auto rtv = CD3DX12_CPU_DESCRIPTOR_HANDLE(rendertarget_heap->GetCPUDescriptorHandleForHeapStart(),
-											 active_back_buffer_index,
-											 rendertarget_heap_size);
+	clear_rendertarget(cmd_list);
+	clear_depthstencil(cmd_list);
 
-	cmd_list->ClearRenderTargetView(rtv,
-									clear_color.data(),
-									0,
-									nullptr);
 }
 
 void directx_12::present()
@@ -294,6 +293,18 @@ void directx_12::create_rendertarget_heap()
 	assert(SUCCEEDED(hr));
 }
 
+void directx_12::create_depthstencil_heap()
+{
+	auto desc = D3D12_DESCRIPTOR_HEAP_DESC{};
+	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	desc.NumDescriptors = dsv_buffer_count;
+
+	auto hr = device->CreateDescriptorHeap(&desc,
+	                                       __uuidof(ID3D12DescriptorHeap),
+	                                       depthstencil_heap.put_void());
+	assert(SUCCEEDED(hr));
+}
+
 void directx_12::create_back_buffers()
 {
 	auto rendertarget_handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(
@@ -316,4 +327,63 @@ void directx_12::create_back_buffers()
 		back_buffer = std::make_unique<gpu_resource>(buffer, resource_state::present);
 	}
 
+}
+
+void directx_12::create_depthstencil_buffer()
+{
+	auto [width, height] = get_window_size(hWnd);
+
+	auto clear_value = D3D12_CLEAR_VALUE{};
+	clear_value.Format = DXGI_FORMAT_D32_FLOAT;
+	clear_value.DepthStencil = { 1.0f, 0 };
+
+	auto buffer_desc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
+	                                                width, height,
+	                                                1, 0, 1, 0,
+	                                                D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+	dx_resource buffer{};
+	auto hr = device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+	                                          D3D12_HEAP_FLAG_NONE,
+	                                          &buffer_desc,
+	                                          D3D12_RESOURCE_STATE_DEPTH_WRITE,
+	                                          &clear_value,
+	                                          __uuidof(ID3D12Resource),
+	                                          buffer.put_void());
+	assert(SUCCEEDED(hr));
+
+	auto desc = D3D12_DEPTH_STENCIL_VIEW_DESC{};
+	desc.Format = DXGI_FORMAT_D32_FLOAT;
+	desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	desc.Texture2D.MipSlice = 0;
+	desc.Flags = D3D12_DSV_FLAG_NONE;
+
+	device->CreateDepthStencilView(buffer.get(),
+	                               &desc,
+	                               depthstencil_heap->GetCPUDescriptorHandleForHeapStart());
+
+	depthstencil_buffer = std::make_unique<gpu_resource>(buffer, resource_state::present);
+}
+
+void directx_12::clear_rendertarget(dx_cmd_list cmd_list)
+{
+	auto rtv_handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rendertarget_heap->GetCPUDescriptorHandleForHeapStart(),
+	                                                active_back_buffer_index,
+	                                                rendertarget_heap_size);
+
+	cmd_list->ClearRenderTargetView(rtv_handle,
+	                                clear_color.data(),
+	                                0,
+	                                nullptr);
+}
+
+void directx_12::clear_depthstencil(dx_cmd_list cmd_list)
+{
+	auto dsv_handle = depthstencil_heap->GetCPUDescriptorHandleForHeapStart();
+
+	cmd_list->ClearDepthStencilView(dsv_handle,
+	                                D3D12_CLEAR_FLAG_DEPTH,
+	                                1.0f,
+	                                0, 0,
+	                                nullptr);
 }
