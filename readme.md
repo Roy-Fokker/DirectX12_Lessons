@@ -26,6 +26,14 @@ initialize directx 12
 |-> init dx swapchain
 |-> init render target heap
 |-> init render targets (back buffers) -> transition buffers to present
+|-> init depth stencil heap
+|-> init depth stencil buffer
+|
+initialize scene 
+|-> create mesh buffer
+|-> load shaders
+|-> create root signature
+|-> create pipeline state object
 |
 set window callbacks
 |-> on keypress
@@ -43,7 +51,8 @@ loop while window-exists and not stop-drawing
 |   |-> transition buffer to render target
 |   |-> wait for gpu to signal completed execution of previous frame
 |   |-> open command list
-|   |-> clear render target
+|   |-> clear render target buffer
+|   |-> clear depth stencil buffer
 |   |
 |   |-> *draw stuff using command list*
 |   |
