@@ -240,9 +240,9 @@ auto directx_12::get_device() const -> dx_device
 void directx_12::create_device(dxgi_adaptor_4 adaptor)
 {
 	auto hr = D3D12CreateDevice(adaptor.get(),
-								D3D_FEATURE_LEVEL_11_0,
-								__uuidof(ID3D12Device2),
-								device.put_void());
+	                            D3D_FEATURE_LEVEL_11_0,
+	                            __uuidof(ID3D12Device2),
+	                            device.put_void());
 	assert(SUCCEEDED(hr));
 
 #ifdef _DEBUG
