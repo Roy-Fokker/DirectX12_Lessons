@@ -21,6 +21,8 @@ namespace
 			case resource_state::copy_dest:
 				return D3D12_RESOURCE_STATE_COPY_DEST;
 		}
+		assert(false);
+		return {};
 	}
 }
 
