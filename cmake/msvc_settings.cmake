@@ -55,7 +55,7 @@ function(set_msvc_project_configuration project_name)
                 ${MSVC_LINKER_FLAGS}
         )
     endif()
-endfunction(set_msvc_project_configuration project_name)
+endfunction()
 
 
 # USAGE
