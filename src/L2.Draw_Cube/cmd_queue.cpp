@@ -74,13 +74,33 @@ auto cmd_queue::get_command_list(uint8_t buffer_index) -> dx_cmd_list
 	return command_list;
 }
 
-void cmd_queue::execute_command_list(uint8_t buffer_index)
+void cmd_queue::execute_commands(uint8_t buffer_index)
 {
 	close_command_list();
 
 	execute_command_list();
 
 	set_frame_complete_signal(buffer_index);
+}
+
+void cmd_queue::wait_for_execute_finish(uint8_t buffer_index)
+{
+	wait_for_previous_frame(buffer_index);
+}
+
+auto cmd_queue::get_command_list() -> dx_cmd_list
+{
+	return get_command_list(0);
+}
+
+void cmd_queue::execute_commands()
+{
+	execute_commands(0);
+}
+
+void cmd_queue::wait_for_execute_finish()
+{
+	wait_for_execute_finish(0);
 }
 
 void cmd_queue::set_name(LPCWSTR name_prefix)

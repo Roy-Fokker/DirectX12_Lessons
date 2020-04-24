@@ -224,7 +224,7 @@ void directx_12::present()
 	auto barrier = back_buffers.at(active_back_buffer_index)->transition_to(resource_state::present);
 	command_queue->set_command_list_barrier(barrier);
 
-	command_queue->execute_command_list(active_back_buffer_index);
+	command_queue->execute_commands(active_back_buffer_index);
 
 	auto hr = swapchain->Present(vsync_enabled, present_flags);
 	assert(SUCCEEDED(hr));

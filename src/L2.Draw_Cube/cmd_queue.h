@@ -36,7 +36,12 @@ namespace learning_dx12
 
 		void set_command_list_barrier(CD3DX12_RESOURCE_BARRIER &transition_barrier);
 		auto get_command_list(uint8_t buffer_index ) -> dx_cmd_list;
-		void execute_command_list(uint8_t buffer_index);
+		void execute_commands(uint8_t buffer_index);
+		void wait_for_execute_finish(uint8_t buffer_index);
+
+		auto get_command_list()->dx_cmd_list;
+		void execute_commands();
+		void wait_for_execute_finish();
 
 		void set_name(LPCWSTR name_prefix);
 
