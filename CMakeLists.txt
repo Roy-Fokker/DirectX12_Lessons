@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 
 include(cmake/vcpkg.cmake)
 include(cmake/msvc_settings.cmake)
+include(cmake/hlsl_compiler.cmake)
 
 project(DirectX_12_Lesson
         VERSION 0.0.1

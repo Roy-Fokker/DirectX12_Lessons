@@ -24,3 +24,9 @@ target_link_libraries(lesson2
         cppitertools::cppitertools
         d3d12.lib
         dxgi.lib)
+
+target_shader_sources(lesson2
+    PRIVATE
+        vertex_shader.hlsl vs_5_1
+        pixel_shader.hlsl ps_5_1
+)

@@ -38,7 +38,7 @@ function(set_msvc_project_configuration project_name)
 
     # Only enable if current compiler is MSVC.
     if (MSVC)
-        message("Enable MSVC configuraiton.")
+        message(STATUS "[Info]: Enable MSVC configuraiton.")
 
         target_compile_options(${project_name}
             INTERFACE
