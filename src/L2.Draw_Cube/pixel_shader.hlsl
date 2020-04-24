@@ -1,5 +1,6 @@
 struct pixel_shader_input
 {
+	float4 position: SV_POSITION;
 	float4 color: COLOR;
 };
 

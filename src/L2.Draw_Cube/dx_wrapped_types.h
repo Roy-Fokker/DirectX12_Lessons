@@ -25,5 +25,10 @@ namespace learning_dx12
 	using dx_resource = winrt::com_ptr<ID3D12Resource>;
 	using dx_fence = winrt::com_ptr<ID3D12Fence>;
 
+	using dx_blob = winrt::com_ptr<ID3DBlob>;
+
+	using dx_pipeline_state = winrt::com_ptr<ID3D12PipelineState>;
+	using dx_root_signature = winrt::com_ptr<ID3D12RootSignature>;
+
 	constexpr auto frame_buffer_count = uint8_t{2};
 }

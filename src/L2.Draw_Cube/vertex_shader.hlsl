@@ -13,7 +13,7 @@ struct vertex_pos_color
 
 struct vertex_shader_output
 {
-	float4 position: SV_Position;
+	float4 position: SV_POSITION;
 	float4 color: COLOR;
 };
 
