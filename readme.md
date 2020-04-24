@@ -30,10 +30,34 @@ initialize directx 12
 |-> init depth stencil buffer
 |
 initialize scene 
-|-> create mesh buffer
-|-> load shaders
+|-> create copy command queue
+|-> get command list from copy-command-queue
+|-> create vertex buffer
+|   |-> create copy buffer (cpu side) *1*
+|   |-> create vertex buffer (gpu side)
+|   |-> create vertex buffer view
+|-> create index buffer
+|   |-> create copy buffer (cpu side) *1*
+|   |-> create index buffer (gpu side)
+|   |-> create index buffer view
 |-> create root signature
+|   |-> describe shader constants in root parameters
+|   |-> identify signature flags
+|   |-> create versioned-root-signature-description blob
+|   |-> create root signature object
 |-> create pipeline state object
+|   |-> load vertex shader bytecode
+|   |-> load pixel shader bytecode
+|   |-> populate D3D12_SHADER_BYTECODE struct for vs and ps
+|   |-> create input layout desc
+|   |-> create graphics pipeline state desc
+|   |   |-> set [root signature, input layout, vs, ps, 
+|   |   |        rasterizer, sample, primitive topology, 
+|   |   |        number of render targets, render target view format
+|   |   |        depth stencil view format]
+|   |-> create pipeline state object
+|-> execute command list
+|-> wait for execution to finish
 |
 set window callbacks
 |-> on keypress
@@ -67,4 +91,6 @@ loop while window-exists and not stop-drawing
 report live dx objects
 |
 stop
+
+*1*: object must remain alive till copy command list completes execution.
 ```
