@@ -5,6 +5,7 @@
 #include "directx12.h"
 #include "cmd_queue.h"
 #include "gpu_resource.h"
+#include "clock.h"
 
 #include <DirectXMath.h>
 #include <array>
@@ -143,7 +144,7 @@ auto draw_cube::continue_draw() const -> bool
 	return continue_to_draw;
 }
 
-void draw_cube::update(double dt)
+void draw_cube::update(const game_clock &clk)
 {
 	int i = 0;
 }

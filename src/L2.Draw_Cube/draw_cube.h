@@ -7,6 +7,7 @@
 
 namespace learning_dx12
 {
+	class game_clock;
 	class directx_12;
 	class cmd_queue;
 	class gpu_resource;
@@ -20,7 +21,7 @@ namespace learning_dx12
 
 		auto continue_draw() const -> bool;
 
-		void update(double delta_time);
+		void update(const game_clock &clk);
 		void render();
 
 		auto on_key_press(uintptr_t wParam, uintptr_t lParam) -> bool;

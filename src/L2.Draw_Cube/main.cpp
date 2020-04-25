@@ -63,8 +63,8 @@ auto main() -> int
 		wnd.process_messages();
 
 		clk.tick();
-		cube.update(clk.get_delta_s());
 
+		cube.update(clk);
 		cube.render();
 	}
 
