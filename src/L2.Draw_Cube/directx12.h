@@ -28,10 +28,12 @@ namespace learning_dx12
 		directx_12(HWND hWnd);
 		~directx_12();
 
-		auto get_cleared_cmd_list() -> dx_cmd_list;
+		auto get_cmd_list() -> dx_cmd_list;
 		void present();
 
 		auto get_device() const -> dx_device;
+		auto get_rendertarget() const -> D3D12_CPU_DESCRIPTOR_HANDLE;
+		auto get_depthstencil() const -> D3D12_CPU_DESCRIPTOR_HANDLE;
 
 	private:
 		void create_device(dxgi_adaptor_4 adaptor);
@@ -40,9 +42,6 @@ namespace learning_dx12
 		void create_depthstencil_heap();
 		void create_back_buffers();
 		void create_depthstencil_buffer();
-
-		void clear_rendertarget(dx_cmd_list cmd_list);
-		void clear_depthstencil(dx_cmd_list cmd_list);
 		
 	private:
 		using gpu_resource_p = std::unique_ptr<gpu_resource>;

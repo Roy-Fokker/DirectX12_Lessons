@@ -23,7 +23,6 @@ using namespace learning_dx12;
 namespace
 {
 	constexpr auto vsync_enabled = TRUE;
-	constexpr auto clear_color = std::array{ 0.4f, 0.6f, 0.9f, 1.0f };
 	constexpr auto dsv_buffer_count = 1;
 
 	auto get_window_size(HWND hWnd) -> std::tuple<uint32_t, uint32_t>
@@ -195,6 +194,7 @@ directx_12::directx_12(HWND hWnd) :
 	create_device(adaptor);
 	
 	command_queue = std::make_unique<cmd_queue>(device, cmd_queue_type::direct);
+	command_queue->set_name(L"render targets");
 
 	create_swapchain(factory);
 	create_rendertarget_heap();
@@ -206,15 +206,12 @@ directx_12::directx_12(HWND hWnd) :
 
 directx_12::~directx_12() = default;
 
-auto directx_12::get_cleared_cmd_list() -> dx_cmd_list
+auto directx_12::get_cmd_list() -> dx_cmd_list
 {
 	auto cmd_list = command_queue->get_command_list(active_back_buffer_index);
 
 	auto barrier = back_buffers.at(active_back_buffer_index)->transition_to(resource_state::render_target);
 	command_queue->set_command_list_barrier(barrier);
-
-	clear_rendertarget(cmd_list);
-	clear_depthstencil(cmd_list);
 
 	return cmd_list;
 }
@@ -235,6 +232,22 @@ void directx_12::present()
 auto directx_12::get_device() const -> dx_device
 {
 	return device;
+}
+
+auto directx_12::get_rendertarget() const -> D3D12_CPU_DESCRIPTOR_HANDLE
+{
+	auto rtv_handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rendertarget_heap->GetCPUDescriptorHandleForHeapStart(),
+													active_back_buffer_index,
+													rendertarget_heap_size);
+
+	return rtv_handle;
+}
+
+auto directx_12::get_depthstencil() const -> D3D12_CPU_DESCRIPTOR_HANDLE
+{
+	auto dsv_handle = depthstencil_heap->GetCPUDescriptorHandleForHeapStart();
+
+	return dsv_handle;
 }
 
 void directx_12::create_device(dxgi_adaptor_4 adaptor)
@@ -371,25 +384,3 @@ void directx_12::create_depthstencil_buffer()
 	depthstencil_buffer = std::make_unique<gpu_resource>(buffer, resource_state::present);
 }
 
-void directx_12::clear_rendertarget(dx_cmd_list cmd_list)
-{
-	auto rtv_handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rendertarget_heap->GetCPUDescriptorHandleForHeapStart(),
-	                                                active_back_buffer_index,
-	                                                rendertarget_heap_size);
-
-	cmd_list->ClearRenderTargetView(rtv_handle,
-	                                clear_color.data(),
-	                                0,
-	                                nullptr);
-}
-
-void directx_12::clear_depthstencil(dx_cmd_list cmd_list)
-{
-	auto dsv_handle = depthstencil_heap->GetCPUDescriptorHandleForHeapStart();
-
-	cmd_list->ClearDepthStencilView(dsv_handle,
-	                                D3D12_CLEAR_FLAG_DEPTH,
-	                                1.0f,
-	                                0, 0,
-	                                nullptr);
-}
