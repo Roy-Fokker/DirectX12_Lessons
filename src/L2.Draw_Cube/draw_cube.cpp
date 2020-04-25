@@ -7,7 +7,6 @@
 #include "gpu_resource.h"
 #include "clock.h"
 
-#include <DirectXMath.h>
 #include <array>
 #include <vector>
 #include <filesystem>
@@ -17,6 +16,8 @@ using namespace learning_dx12;
 using namespace DirectX;
 
 namespace {
+	constexpr auto clear_color = std::array{ 0.4f, 0.6f, 0.9f, 1.0f };
+
 	struct vertex_pos_color
 	{
 		XMFLOAT3 position;
@@ -121,6 +122,7 @@ draw_cube::draw_cube(HWND hWnd)
 
 	auto copy_buffer_count = 1;
 	copy_queue = std::make_unique<cmd_queue>(dx->get_device(), cmd_queue_type::copy, copy_buffer_count);
+	copy_queue->set_name(L"copy queue");
 
 	auto cmd_list = copy_queue->get_command_list();
 
@@ -135,6 +137,17 @@ draw_cube::draw_cube(HWND hWnd)
 
 	copy_queue->execute_commands();
 	copy_queue->wait_for_execute_finish();
+
+	RECT rect{};
+	::GetClientRect(hWnd, &rect);
+	auto width = rect.right - rect.left,
+	     height = rect.bottom - rect.top;
+	view_port = { 0.0f , 0.0f, static_cast<float>(width), static_cast<float>(height) };
+
+	scissor_rect = { 0, 0, width, height };
+
+	field_of_view = XMConvertToRadians(45.0f);
+
 }
 
 draw_cube::~draw_cube() = default;
@@ -146,12 +159,54 @@ auto draw_cube::continue_draw() const -> bool
 
 void draw_cube::update(const game_clock &clk)
 {
-	int i = 0;
+	auto angle = XMConvertToRadians(static_cast<float>(clk.get_total_s()) * 90.0f);
+	const auto rotation_axis = XMVectorSet(0.0f, 1.0f, 1.0f, 0.0f);
+	//model = XMMatrixRotationAxis(rotation_axis, angle);
+	model = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+
+	const auto eye_pos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+	const auto tgt_pos = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	const auto up_dir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	view = XMMatrixLookAtLH(eye_pos, tgt_pos, up_dir);
+
+	auto aspect_ratio = view_port.Width / view_port.Height;
+	projection = XMMatrixPerspectiveFovLH(field_of_view, aspect_ratio, 0.1f, 100.0f);
 }
 
 void draw_cube::render()
 {
-	auto cmd_list = dx->get_cleared_cmd_list();
+	auto cmd_list = dx->get_cmd_list();
+
+	auto rtv = dx->get_rendertarget();
+	auto dsv = dx->get_depthstencil();
+
+	cmd_list->ClearRenderTargetView(rtv,
+	                                clear_color.data(),
+	                                0,
+	                                nullptr);
+	cmd_list->ClearDepthStencilView(dsv,
+	                                D3D12_CLEAR_FLAG_DEPTH,
+	                                1.0f,
+	                                0, 0,
+	                                nullptr);
+	cmd_list->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+
+	cmd_list->SetPipelineState(pipeline_state.get());
+	cmd_list->SetGraphicsRootSignature(root_signature.get());
+
+	cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	cmd_list->IASetVertexBuffers(0, 1, &vertex_buffer_view);
+	cmd_list->IASetIndexBuffer(&index_buffer_view);
+
+	cmd_list->RSSetViewports(1, &view_port);
+	cmd_list->RSSetScissorRects(1, &scissor_rect);
+
+	auto mvp = XMMatrixMultiply(model, view);
+	mvp = XMMatrixMultiply(mvp, projection);
+	cmd_list->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvp, 0);
+
+	cmd_list->DrawIndexedInstanced(static_cast<uint32_t>(cube_indicies.size()),
+	                               1, 0, 0, 0);
 
 	dx->present();
 }

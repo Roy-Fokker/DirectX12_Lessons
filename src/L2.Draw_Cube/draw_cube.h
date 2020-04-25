@@ -2,6 +2,8 @@
 
 #include "dx_wrapped_types.h"
 
+#include <DirectXMath.h>
+
 #include <Windows.h>
 #include <memory>
 
@@ -26,6 +28,7 @@ namespace learning_dx12
 
 		auto on_key_press(uintptr_t wParam, uintptr_t lParam) -> bool;
 		auto on_mouse_move(uintptr_t wParam, uintptr_t lParam) -> bool;
+		auto on_window_resize(uintptr_t wParam, uintptr_t lParam) -> bool;
 
 	private:
 		void create_vertex_buffer(dx_cmd_list cmd_list, dx_resource &copy_buffer);
@@ -37,9 +40,6 @@ namespace learning_dx12
 	private:
 		bool continue_to_draw { true };
 
-		std::unique_ptr<directx_12> dx{};
-		std::unique_ptr<cmd_queue> copy_queue{};
-
 		dx_resource vertex_buffer{};
 		D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view{};
 		dx_resource index_buffer{};
@@ -47,5 +47,17 @@ namespace learning_dx12
 
 		dx_root_signature root_signature{};
 		dx_pipeline_state pipeline_state{};
+
+		D3D12_VIEWPORT view_port{};
+		D3D12_RECT scissor_rect{};
+
+		float field_of_view{};
+
+		DirectX::XMMATRIX model;
+		DirectX::XMMATRIX view;
+		DirectX::XMMATRIX projection;
+
+		std::unique_ptr<directx_12> dx{};
+		std::unique_ptr<cmd_queue> copy_queue{};
 	};
 }
