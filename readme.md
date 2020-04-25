@@ -71,14 +71,21 @@ loop while window-exists and not stop-drawing
 |-> process window messages
 |-> clock tick
 |-> update frame
+|   |-> update model, view and projection matrices
 |-> draw frame
 |   |-> transition buffer to render target
 |   |-> wait for gpu to signal completed execution of previous frame
 |   |-> open command list
 |   |-> clear render target buffer
 |   |-> clear depth stencil buffer
+|   |-> set render targets
+|   |-> set pipeline state and root signature
+|   |-> set primitive topology
+|   |-> set vertex and index buffers (view)
+|   |-> set viewport and scissor rect
 |   |
-|   |-> *draw stuff using command list*
+|   |-> set updated MVP matrix to constant slot
+|   |-> draw indexed instance
 |   |
 |   |-> transition buffer to present
 |   |-> close command list
