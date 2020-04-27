@@ -2,3 +2,5 @@
 .vscode/
 build/
 out/
+x64/
+*.user

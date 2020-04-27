@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "src\common\common.vcxitems", "{D4C74C74-93E3-48EC-AF46-8431FB40DCC4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "L1.Basic_Window", "src\L1.Basic_Window\L1.Basic_Window.vcxproj", "{F07FE3D1-B277-4BAA-B405-0322B891E501}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "L2.Draw_Cube", "src\L2.Draw_Cube\L2.Draw_Cube.vcxproj", "{3262FBF9-C7C3-4E73-8A22-374238774D5A}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\common\common.vcxitems*{3262fbf9-c7c3-4e73-8a22-374238774d5a}*SharedItemsImports = 4
+		src\common\common.vcxitems*{d4c74c74-93e3-48ec-af46-8431fb40dcc4}*SharedItemsImports = 9
+		src\common\common.vcxitems*{f07fe3d1-b277-4baa-b405-0322b891e501}*SharedItemsImports = 4
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F07FE3D1-B277-4BAA-B405-0322B891E501}.Debug|x64.ActiveCfg = Debug|x64
+		{F07FE3D1-B277-4BAA-B405-0322B891E501}.Debug|x64.Build.0 = Debug|x64
+		{F07FE3D1-B277-4BAA-B405-0322B891E501}.Release|x64.ActiveCfg = Release|x64
+		{F07FE3D1-B277-4BAA-B405-0322B891E501}.Release|x64.Build.0 = Release|x64
+		{3262FBF9-C7C3-4E73-8A22-374238774D5A}.Debug|x64.ActiveCfg = Debug|x64
+		{3262FBF9-C7C3-4E73-8A22-374238774D5A}.Debug|x64.Build.0 = Debug|x64
+		{3262FBF9-C7C3-4E73-8A22-374238774D5A}.Release|x64.ActiveCfg = Release|x64
+		{3262FBF9-C7C3-4E73-8A22-374238774D5A}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C2C3F64E-BDD9-49BB-ADF0-EA2F0D1FB13F}
+	EndGlobalSection
+EndGlobal
